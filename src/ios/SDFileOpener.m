@@ -35,15 +35,22 @@
     dispatch_async(dispatch_get_main_queue(), ^{
         self.documentController = [UIDocumentInteractionController interactionControllerWithURL:url];
         self.documentController.delegate = self;
+        self.documentController.name = url.lastPathComponent;
 
         UIView *view = self.viewController.view;
         CGRect rect = view.bounds;
-        BOOL presented = [self.documentController presentOpenInMenuFromRect:rect inView:view animated:YES];
+        BOOL presented = [self.documentController presentPreviewAnimated:YES];
         if (presented) {
             CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"OPENED"];
             [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
         } else {
-            [self sendError:@"NO_APP" command:command];
+            BOOL menuPresented = [self.documentController presentOptionsMenuFromRect:rect inView:view animated:YES];
+            if (menuPresented) {
+                CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"OPENED"];
+                [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+            } else {
+                [self sendError:@"NO_APP" command:command];
+            }
         }
     });
 }
@@ -122,6 +129,20 @@
     CDVPluginResult *result = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"CANCELED"];
     [self.commandDelegate sendPluginResult:result callbackId:self.pendingCallbackId];
     self.pendingCallbackId = nil;
+}
+
+#pragma mark - UIDocumentInteractionControllerDelegate
+
+- (UIViewController *)documentInteractionControllerViewControllerForPreview:(UIDocumentInteractionController *)controller {
+    return self.viewController;
+}
+
+- (UIView *)documentInteractionControllerViewForPreview:(UIDocumentInteractionController *)controller {
+    return self.viewController.view;
+}
+
+- (CGRect)documentInteractionControllerRectForPreview:(UIDocumentInteractionController *)controller {
+    return self.viewController.view.bounds;
 }
 
 @end
