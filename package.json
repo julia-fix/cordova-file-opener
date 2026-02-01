@@ -1,0 +1,20 @@
+{
+  "name": "cordova-file-opener",
+  "version": "0.1.0",
+  "description": "Open a local file in the appropriate native app.",
+  "cordova": {
+    "id": "cordova-file-opener",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  },
+  "keywords": [
+    "cordova",
+    "file",
+    "opener",
+    "android",
+    "ios"
+  ],
+  "license": "MIT"
+}

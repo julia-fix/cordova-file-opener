@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='utf-8'?>
+<plugin id="cordova-file-opener" version="0.1.0" xmlns="http://apache.org/cordova/ns/plugins/1.0">
+    <name>Cordova File Opener</name>
+    <description>Open a local file in the appropriate native app.</description>
+    <license>MIT</license>
+
+    <js-module src="www/fileOpener.js" name="FileOpener">
+        <clobbers target="window.FileOpener" />
+    </js-module>
+
+    <platform name="ios">
+        <framework src="UIKit.framework" />
+        <source-file src="src/ios/SDFileOpener.h" />
+        <source-file src="src/ios/SDFileOpener.m" />
+        <config-file target="config.xml" parent="/*">
+            <feature name="FileOpener">
+                <param name="ios-package" value="SDFileOpener" />
+            </feature>
+        </config-file>
+    </platform>
+
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/widget">
+            <feature name="FileOpener">
+                <param name="android-package" value="com.kinolift.fileopener.FileOpener" />
+            </feature>
+        </config-file>
+
+        <source-file src="src/android/FileOpener.java" target-dir="src/com/kinolift/fileopener" />
+        <resource-file src="src/android/res/xml/file_opener_paths.xml" target="res/xml/file_opener_paths.xml" />
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <provider
+                android:name="androidx.core.content.FileProvider"
+                android:authorities="$PACKAGE_NAME.fileopener.provider"
+                android:exported="false"
+                android:grantUriPermissions="true">
+                <meta-data
+                    android:name="android.support.FILE_PROVIDER_PATHS"
+                    android:resource="@xml/file_opener_paths" />
+            </provider>
+        </config-file>
+    </platform>
+</plugin>
