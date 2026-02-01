@@ -19,6 +19,10 @@ import java.util.Locale;
 public class FileOpener extends CordovaPlugin {
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+        if ("save".equals(action)) {
+            callbackContext.error("NOT_SUPPORTED");
+            return true;
+        }
         if (!"open".equals(action)) {
             return false;
         }
