@@ -16,6 +16,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Locale;
 
@@ -54,10 +59,25 @@ public class FileOpener extends CordovaPlugin {
                 return true;
             }
             try {
+                // Try to copy the file to external cache so external apps can reliably read it
+                File externalCache = cordova.getActivity().getExternalCacheDir();
+                File toUse = file;
+                if (externalCache != null) {
+                    File tmpDir = new File(externalCache, "fileopener");
+                    if (!tmpDir.exists()) tmpDir.mkdirs();
+                    File dst = new File(tmpDir, file.getName());
+                    try {
+                        copyFile(file, dst);
+                        toUse = dst;
+                    } catch (IOException ignored) {
+                        // fallback to original file if copy fails
+                    }
+                }
+
                 uri = FileProvider.getUriForFile(
                     cordova.getContext(),
                     cordova.getActivity().getPackageName() + ".fileopener.provider",
-                    file
+                    toUse
                 );
             } catch (IllegalArgumentException e) {
                 callbackContext.error("INVALID_PATH");
@@ -126,6 +146,27 @@ public class FileOpener extends CordovaPlugin {
             return Uri.fromFile(file);
         }
         return uri;
+    }
+
+    private void copyFile(File src, File dst) throws IOException {
+        if (dst.exists()) {
+            // replace existing
+            dst.delete();
+        }
+        InputStream in = null;
+        OutputStream out = null;
+        try {
+            in = new FileInputStream(src);
+            out = new FileOutputStream(dst);
+            byte[] buf = new byte[8192];
+            int len;
+            while ((len = in.read(buf)) > 0) {
+                out.write(buf, 0, len);
+            }
+        } finally {
+            try { if (in != null) in.close(); } catch (Exception ignored) {}
+            try { if (out != null) out.close(); } catch (Exception ignored) {}
+        }
     }
 
     private String guessMimeType(String path) {
