@@ -1,7 +1,9 @@
 package com.kinolift.fileopener;
 
 import android.content.Intent;
+import android.content.ClipData;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.webkit.MimeTypeMap;
 import androidx.core.content.FileProvider;
@@ -14,6 +16,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.File;
+import java.util.List;
 import java.util.Locale;
 
 public class FileOpener extends CordovaPlugin {
@@ -91,6 +94,21 @@ public class FileOpener extends CordovaPlugin {
         }
 
         try {
+            // Ensure receiving apps have permission to read the content URI
+            try {
+                ClipData clip = ClipData.newUri(cordova.getActivity().getContentResolver(), "file", uri);
+                intent.setClipData(clip);
+            } catch (Exception ignored) {}
+
+            // Explicitly grant URI permission to resolved activities (some apps require this)
+            try {
+                List<ResolveInfo> resInfoList = pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+                for (ResolveInfo resolveInfo : resInfoList) {
+                    String packageName = resolveInfo.activityInfo.packageName;
+                    cordova.getActivity().grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }
+            } catch (Exception ignored) {}
+
             cordova.getActivity().startActivity(intent);
             callbackContext.success("OPENED");
         } catch (SecurityException e) {
