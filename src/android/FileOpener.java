@@ -112,7 +112,7 @@ public class FileOpener extends CordovaPlugin {
 
         PackageManager pm = cordova.getActivity().getPackageManager();
         if (intent.resolveActivity(pm) == null) {
-            // Try with generic MIME type as a fallback to let browser or other handlers open it
+            // Try with generic MIME type as a fallback
             intent.setDataAndType(uri, "*/*");
             if (intent.resolveActivity(pm) == null) {
                 callbackContext.error("NO_APP");
@@ -120,14 +120,7 @@ public class FileOpener extends CordovaPlugin {
             }
         }
         Log.d(TAG, "Intent data=" + intent.getData() + " type=" + intent.getType());
-        try {
-            List<ResolveInfo> possible = pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
-            StringBuilder sb = new StringBuilder();
-            for (ResolveInfo ri : possible) {
-                sb.append(ri.activityInfo.packageName).append(",");
-            }
-            Log.d(TAG, "Resolved activities: " + sb.toString());
-        } catch (Exception ignored) {}
+        
         try {
             // Ensure receiving apps have permission to read the content URI
             try {
@@ -135,7 +128,7 @@ public class FileOpener extends CordovaPlugin {
                 intent.setClipData(clip);
             } catch (Exception ignored) {}
 
-            // Explicitly grant URI permission to resolved activities (some apps require this)
+            // Explicitly grant URI permission to all resolved activities
             try {
                 List<ResolveInfo> resInfoList = pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
                 for (ResolveInfo resolveInfo : resInfoList) {
@@ -145,9 +138,11 @@ public class FileOpener extends CordovaPlugin {
                 }
             } catch (Exception e) { Log.w(TAG, "grantUriPermission failed: " + e.getMessage()); }
 
-            try {
-                cordova.getActivity().startActivity(intent);
-                callbackContext.success("OPENED");
+            // Show chooser dialog for user to select which app to use
+            Intent chooserIntent = Intent.createChooser(intent, "Open with");
+            Log.d(TAG, "Launching chooser intent");
+            cordova.getActivity().startActivity(chooserIntent);
+            callbackContext.success("OPENED");
             } catch (Exception e) {
                 Log.e(TAG, "startActivity failed", e);
                 throw e;
