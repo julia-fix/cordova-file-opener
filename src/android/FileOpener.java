@@ -143,10 +143,6 @@ public class FileOpener extends CordovaPlugin {
             Log.d(TAG, "Launching chooser intent");
             cordova.getActivity().startActivity(chooserIntent);
             callbackContext.success("OPENED");
-            } catch (Exception e) {
-                Log.e(TAG, "startActivity failed", e);
-                throw e;
-            }
         } catch (SecurityException e) {
             Log.w(TAG, "SecurityException: " + e.getMessage());
             callbackContext.error("NO_PERMISSION");
@@ -232,6 +228,7 @@ public class FileOpener extends CordovaPlugin {
                     return null;
             }
         }
+        
         return mimeType;
     }
 }
