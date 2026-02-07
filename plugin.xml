@@ -29,16 +29,6 @@
         <source-file src="src/android/FileOpener.java" target-dir="src/com/kinolift/fileopener" />
         <resource-file src="src/android/res/xml/file_opener_paths.xml" target="res/xml/file_opener_paths.xml" />
 
-        <config-file target="AndroidManifest.xml" parent="/manifest/application">
-            <provider
-                android:name="androidx.core.content.FileProvider"
-                android:authorities="$PACKAGE_NAME.fileopener.provider"
-                android:exported="true"
-                android:grantUriPermissions="true">
-                <meta-data
-                    android:name="android.support.FILE_PROVIDER_PATHS"
-                    android:resource="@xml/file_opener_paths" />
-            </provider>
-        </config-file>
+        <!-- Rely on existing Cordova FileProvider to avoid duplicate providers and authority mismatches -->
     </platform>
 </plugin>

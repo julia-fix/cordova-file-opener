@@ -79,9 +79,11 @@ public class FileOpener extends CordovaPlugin {
                     }
                 }
 
+                // Use the existing Cordova file provider authority to avoid mismatches
+                String authority = cordova.getActivity().getPackageName() + ".cdv.core.file.provider";
                 uri = FileProvider.getUriForFile(
                     cordova.getContext(),
-                    cordova.getActivity().getPackageName() + ".fileopener.provider",
+                    authority,
                     toUse
                 );
                 Log.d(TAG, "Content URI for file: " + uri);
