@@ -62,30 +62,26 @@ public class FileOpener extends CordovaPlugin {
                 return true;
             }
             try {
-                // Try to copy the file to external cache so external apps can reliably read it
-                File externalCache = cordova.getActivity().getExternalCacheDir();
+                // Prefer copying to the app's internal cache so FileProvider paths include it
+                File internalCache = cordova.getActivity().getCacheDir();
                 File toUse = file;
-                if (externalCache != null) {
-                    File tmpDir = new File(externalCache, "fileopener");
+                if (internalCache != null) {
+                    File tmpDir = new File(internalCache, "fileopener");
                     if (!tmpDir.exists()) tmpDir.mkdirs();
                     File dst = new File(tmpDir, file.getName());
                     try {
                         copyFile(file, dst);
                         toUse = dst;
-                        Log.d(TAG, "Copied file to external cache: " + dst.getAbsolutePath());
+                        Log.d(TAG, "Copied file to internal cache: " + dst.getAbsolutePath());
                     } catch (IOException e) {
-                        Log.w(TAG, "Failed to copy file to external cache, using original: " + e.getMessage());
+                        Log.w(TAG, "Failed to copy file to internal cache, using original: " + e.getMessage());
                         // fallback to original file if copy fails
                     }
                 }
 
                 // Use the existing Cordova file provider authority to avoid mismatches
                 String authority = cordova.getActivity().getPackageName() + ".cdv.core.file.provider";
-                uri = FileProvider.getUriForFile(
-                    cordova.getContext(),
-                    authority,
-                    toUse
-                );
+                uri = FileProvider.getUriForFile(cordova.getContext(), authority, toUse);
                 Log.d(TAG, "Content URI for file: " + uri);
             } catch (IllegalArgumentException e) {
                 callbackContext.error("INVALID_PATH");
