@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.webkit.MimeTypeMap;
+import android.util.Log;
 import androidx.core.content.FileProvider;
 
 import org.apache.cordova.CordovaPlugin;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class FileOpener extends CordovaPlugin {
+    private static final String TAG = "FileOpener";
     @Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
         if ("save".equals(action)) {
@@ -47,6 +49,7 @@ public class FileOpener extends CordovaPlugin {
         }
 
         Uri uri = buildUri(path);
+        Log.d(TAG, "buildUri -> " + uri);
         if (uri == null) {
             callbackContext.error("INVALID_PATH");
             return true;
@@ -69,7 +72,9 @@ public class FileOpener extends CordovaPlugin {
                     try {
                         copyFile(file, dst);
                         toUse = dst;
-                    } catch (IOException ignored) {
+                        Log.d(TAG, "Copied file to external cache: " + dst.getAbsolutePath());
+                    } catch (IOException e) {
+                        Log.w(TAG, "Failed to copy file to external cache, using original: " + e.getMessage());
                         // fallback to original file if copy fails
                     }
                 }
@@ -79,6 +84,7 @@ public class FileOpener extends CordovaPlugin {
                     cordova.getActivity().getPackageName() + ".fileopener.provider",
                     toUse
                 );
+                Log.d(TAG, "Content URI for file: " + uri);
             } catch (IllegalArgumentException e) {
                 callbackContext.error("INVALID_PATH");
                 return true;
@@ -98,6 +104,7 @@ public class FileOpener extends CordovaPlugin {
         if (mimeType == null) {
             mimeType = "*/*";
         }
+        Log.d(TAG, "MIME type for " + path + " -> " + mimeType);
 
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, mimeType);
@@ -112,7 +119,15 @@ public class FileOpener extends CordovaPlugin {
                 return true;
             }
         }
-
+        Log.d(TAG, "Intent data=" + intent.getData() + " type=" + intent.getType());
+        try {
+            List<ResolveInfo> possible = pm.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+            StringBuilder sb = new StringBuilder();
+            for (ResolveInfo ri : possible) {
+                sb.append(ri.activityInfo.packageName).append(",");
+            }
+            Log.d(TAG, "Resolved activities: " + sb.toString());
+        } catch (Exception ignored) {}
         try {
             // Ensure receiving apps have permission to read the content URI
             try {
@@ -126,14 +141,22 @@ public class FileOpener extends CordovaPlugin {
                 for (ResolveInfo resolveInfo : resInfoList) {
                     String packageName = resolveInfo.activityInfo.packageName;
                     cordova.getActivity().grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    Log.d(TAG, "Granted URI permission to: " + packageName);
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) { Log.w(TAG, "grantUriPermission failed: " + e.getMessage()); }
 
-            cordova.getActivity().startActivity(intent);
-            callbackContext.success("OPENED");
+            try {
+                cordova.getActivity().startActivity(intent);
+                callbackContext.success("OPENED");
+            } catch (Exception e) {
+                Log.e(TAG, "startActivity failed", e);
+                throw e;
+            }
         } catch (SecurityException e) {
+            Log.w(TAG, "SecurityException: " + e.getMessage());
             callbackContext.error("NO_PERMISSION");
         } catch (Exception e) {
+            Log.e(TAG, "Exception while opening file", e);
             callbackContext.error("FAILED");
         }
         return true;
