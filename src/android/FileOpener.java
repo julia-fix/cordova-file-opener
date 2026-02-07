@@ -82,8 +82,12 @@ public class FileOpener extends CordovaPlugin {
 
         PackageManager pm = cordova.getActivity().getPackageManager();
         if (intent.resolveActivity(pm) == null) {
-            callbackContext.error("NO_APP");
-            return true;
+            // Try with generic MIME type as a fallback to let browser or other handlers open it
+            intent.setDataAndType(uri, "*/*");
+            if (intent.resolveActivity(pm) == null) {
+                callbackContext.error("NO_APP");
+                return true;
+            }
         }
 
         try {
@@ -115,6 +119,42 @@ public class FileOpener extends CordovaPlugin {
         if (ext == null) {
             return null;
         }
-        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+        
+        // Try to get MIME type from system first
+        String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+        
+        // Fallback for common types if system doesn't recognize them
+        if (mimeType == null) {
+            switch (ext) {
+                case "pdf":
+                    return "application/pdf";
+                case "doc":
+                    return "application/msword";
+                case "docx":
+                    return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                case "xls":
+                case "xlsx":
+                    return "application/vnd.ms-excel";
+                case "ppt":
+                case "pptx":
+                    return "application/vnd.ms-powerpoint";
+                case "txt":
+                    return "text/plain";
+                case "jpg":
+                case "jpeg":
+                    return "image/jpeg";
+                case "png":
+                    return "image/png";
+                case "gif":
+                    return "image/gif";
+                case "webp":
+                    return "image/webp";
+                case "zip":
+                    return "application/zip";
+                default:
+                    return null;
+            }
+        }
+        return mimeType;
     }
 }
