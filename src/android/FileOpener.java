@@ -44,7 +44,7 @@ public class FileOpener extends CordovaPlugin {
             return true;
         }
 
-        if (CordovaResourceApi.FILE_URI_SCHEME.equals(uri.getScheme())) {
+        if ("file".equals(uri.getScheme())) {
             File file = new File(uri.getPath());
             if (!file.exists()) {
                 callbackContext.error("NOT_FOUND");
