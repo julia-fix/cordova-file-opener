@@ -55,6 +55,17 @@ public class FileOpener extends CordovaPlugin {
             return true;
         }
 
+        // If URI is http/https/cdvfile, resolve it to a real file path using CordovaResourceApi
+        if ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()) || "cdvfile".equals(uri.getScheme())) {
+            uri = tryResolveCordovaUri(uri);
+            // If still not a file:// URI, error out
+            if (!"file".equals(uri.getScheme())) {
+                Log.w(TAG, "Could not resolve URL to file path: " + uri);
+                callbackContext.error("INVALID_PATH");
+                return true;
+            }
+        }
+
         if ("file".equals(uri.getScheme())) {
             File file = new File(uri.getPath());
             if (!file.exists()) {
@@ -190,6 +201,20 @@ public class FileOpener extends CordovaPlugin {
             try { if (in != null) in.close(); } catch (Exception ignored) {}
             try { if (out != null) out.close(); } catch (Exception ignored) {}
         }
+    }
+
+    private Uri tryResolveCordovaUri(Uri uri) {
+        try {
+            CordovaResourceApi resourceApi = cordova.getResourceApi();
+            if (resourceApi != null) {
+                Uri resolvedUri = resourceApi.remapUri(uri);
+                Log.d(TAG, "CordovaResourceApi remapped " + uri + " -> " + resolvedUri);
+                return resolvedUri;
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "CordovaResourceApi.remapUri failed: " + e.getMessage());
+        }
+        return uri;
     }
 
     private String guessMimeType(String path) {
